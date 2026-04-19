@@ -1,0 +1,248 @@
+/* =============================================
+   NERO — 首都高レーサー  ·  style.css
+   SHUTO EXPRESSWAY MIDNIGHT EDITION
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --gold:   #d4a017;
+  --goldt:  #f0c840;
+  --cyan:   #00c4ff;
+  --red:    #e03020;
+  --green:  #2ecc71;
+  --bg:     #010306;
+  --text:   #dce8f0;
+  --muted:  #4a5a68;
+  --glass:  rgba(2,4,12,0.88);
+  --bdr:    rgba(0,180,255,0.16);
+  --bdrg:   rgba(212,160,23,0.24);
+  --panel:  rgba(2,6,18,0.90);
+}
+
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text);user-select:none;}
+canvas{display:block;}
+.hidden{display:none!important;}
+
+/* =============================================
+   LOADING
+   ============================================= */
+#loading-screen{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s ease;}
+.loading-inner{text-align:center;}
+.loading-logo{font-family:'Bebas Neue',cursive;font-size:96px;letter-spacing:18px;color:var(--gold);line-height:1;text-shadow:0 0 60px rgba(212,160,23,.5),0 0 120px rgba(212,160,23,.2);}
+.loading-sub{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:5px;color:var(--muted);margin-top:6px;}
+.loading-bar-wrap{width:260px;height:2px;background:rgba(255,255,255,.07);margin:32px auto 8px;overflow:hidden;}
+.loading-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--cyan));transition:width .2s ease;box-shadow:0 0 14px var(--cyan);}
+.loading-pct{font-family:'Orbitron',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;}
+
+/* =============================================
+   SCREENS
+   ============================================= */
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:8000;background:rgba(0,1,5,.93);}
+.screen.hidden{display:none;}
+
+/* =============================================
+   SETTINGS SCREEN
+   ============================================= */
+.settings-panel{
+  background:rgba(2,5,18,0.96);
+  border:1px solid rgba(0,180,255,0.2);
+  border-top:2px solid var(--cyan);
+  padding:28px 32px;
+  width:min(560px,92vw);
+  max-height:90vh;
+  overflow-y:auto;
+  position:relative;
+}
+.settings-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+.settings-title{font-family:'Orbitron',monospace;font-size:16px;letter-spacing:6px;color:var(--cyan);}
+.settings-close-btn{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);padding:8px 16px;cursor:pointer;transition:all .2s;}
+.settings-close-btn:hover{color:var(--text);border-color:rgba(255,255,255,.3);}
+.settings-section{margin-bottom:28px;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:24px;}
+.settings-section:last-of-type{border-bottom:none;}
+.settings-section-label{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:4px;color:var(--muted);margin-bottom:14px;}
+.settings-start{margin-top:8px;width:100%;}
+
+/* GFX selector */
+.gfx-selector{display:flex;gap:12px;flex-wrap:wrap;}
+.btn-gfx{
+  flex:1;min-width:130px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);
+  color:var(--muted);padding:14px 12px;cursor:pointer;transition:all .2s;
+}
+.btn-gfx:hover{border-color:rgba(0,196,255,.4);color:var(--cyan);}
+.btn-gfx.active{border-color:var(--cyan);background:rgba(0,196,255,.10);color:var(--cyan);box-shadow:0 0 18px rgba(0,196,255,.15);}
+.gfx-big{font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:4px;line-height:1;}
+.gfx-sub{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;}
+.gfx-desc{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);text-align:center;}
+.gfx-warn{font-family:'Orbitron',monospace;font-size:9px;color:#ff8844;letter-spacing:2px;margin-top:10px;min-height:16px;}
+
+/* Controls table in settings */
+.ctrl-table{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;}
+.ctrl-row-s{display:flex;align-items:center;gap:6px;font-size:13px;color:rgba(200,220,240,.75);padding:4px 0;}
+.ctrl-row-s kbd{display:inline-block;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-bottom:2px solid rgba(255,255,255,.10);padding:2px 6px;border-radius:3px;font-family:'Orbitron',monospace;font-size:9px;color:rgba(200,220,240,.9);min-width:24px;text-align:center;}
+.ctrl-mt-hint{color:rgba(212,160,23,.65);}
+
+/* Route info */
+.route-info{font-family:'Rajdhani',sans-serif;font-size:14px;color:rgba(200,220,240,.7);line-height:2;}
+.ri-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+.ri-red{background:#e74c3c;} .ri-green{background:#2ecc71;} .ri-blue{background:#3498db;} .ri-orange{background:#f39c12;}
+
+/* =============================================
+   TITLE SCREEN
+   ============================================= */
+.title-settings-btn{
+  position:absolute;top:20px;right:20px;
+  font-size:22px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);color:var(--muted);
+  width:44px;height:44px;border-radius:4px;cursor:pointer;
+  transition:all .2s;z-index:1;
+}
+.title-settings-btn:hover{color:var(--cyan);border-color:var(--cyan);background:rgba(0,196,255,.08);}
+
+.title-content{text-align:center;position:relative;}
+.title-logo{font-family:'Bebas Neue',cursive;font-size:clamp(72px,12vw,130px);letter-spacing:20px;color:#fff;line-height:1;text-shadow:0 0 80px rgba(0,180,255,.18);}
+.title-dot{color:var(--gold);}
+.title-tagline{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:5px;color:var(--muted);margin-top:4px;}
+.title-sep{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:22px auto;}
+
+.title-quick-row{display:flex;justify-content:center;margin-bottom:20px;}
+.tq-item{text-align:center;}
+.tq-label{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:4px;color:var(--muted);margin-bottom:10px;}
+
+/* Mode selector */
+.mode-selector{display:flex;justify-content:center;gap:12px;}
+.mode-selector.small .btn-mode{padding:9px 22px;}
+.mode-selector.small .mode-big{font-size:26px;}
+.mode-selector.small .mode-sub{font-size:8px;}
+.btn-mode{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--muted);padding:12px 28px;cursor:pointer;transition:all .2s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.btn-mode:hover{border-color:rgba(212,160,23,.4);color:var(--gold);}
+.btn-mode.active{border-color:var(--gold);background:rgba(212,160,23,.12);color:var(--gold);box-shadow:0 0 18px rgba(212,160,23,.2);}
+.mode-big{font-family:'Bebas Neue',cursive;font-size:32px;letter-spacing:4px;line-height:1;}
+.mode-sub{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;margin-top:3px;}
+
+.btn-start{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:5px;color:#000;background:var(--gold);border:none;padding:16px 52px;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:background .2s,transform .1s,box-shadow .2s;}
+.btn-start:hover{background:var(--goldt);transform:scale(1.03);box-shadow:0 0 28px rgba(212,160,23,.4);}
+.btn-start:active{transform:scale(.97);}
+.title-controls-hint{margin-top:20px;font-size:12px;color:var(--muted);letter-spacing:1px;}
+.key-hint{display:inline-block;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);padding:2px 7px;border-radius:3px;font-family:'Orbitron',monospace;font-size:10px;margin:0 2px;}
+
+/* Game Over */
+.go-content{text-align:center;}
+.go-label{font-family:'Bebas Neue',cursive;font-size:72px;letter-spacing:10px;color:var(--red);text-shadow:0 0 40px rgba(224,48,32,.5);}
+.go-score-row{display:flex;justify-content:center;align-items:baseline;gap:16px;margin:8px 0;}
+.go-score-label{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:4px;color:var(--muted);}
+.go-score-val{font-family:'Bebas Neue',cursive;font-size:52px;color:var(--gold);line-height:1;}
+
+/* =============================================
+   HUD
+   ============================================= */
+#hud{pointer-events:none;z-index:100;}
+#hud.hidden{display:none;}
+
+/* TOP BAR */
+.hud-top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:10px 20px;background:linear-gradient(to bottom,rgba(0,1,6,.82) 0%,transparent 100%);}
+.hud-block{min-width:80px;}
+.hud-block.right{text-align:right;}
+.hud-block.center{text-align:center;flex:1;}
+.hud-label{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);}
+.hud-val{font-family:'Bebas Neue',cursive;font-size:32px;color:var(--gold);line-height:1.1;}
+
+/* IN-GAME SETTINGS BUTTON */
+.ingame-settings-btn{
+  position:fixed;top:10px;right:16px;
+  font-size:18px;background:rgba(0,2,12,.75);
+  border:1px solid rgba(0,180,255,.18);color:var(--muted);
+  width:40px;height:40px;border-radius:4px;cursor:pointer;
+  pointer-events:auto;z-index:200;
+  transition:all .2s;
+}
+.ingame-settings-btn:hover{color:var(--cyan);border-color:var(--cyan);}
+
+/* MODE BADGE */
+.mode-badge{position:fixed;top:10px;left:50%;transform:translateX(-50%) translateY(46px);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:4px;color:var(--cyan);background:rgba(0,196,255,.08);border:1px solid rgba(0,196,255,.22);padding:3px 10px;}
+
+/* STATUS */
+.hud-status{position:fixed;top:80px;left:50%;transform:translateX(-50%);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:4px;color:var(--cyan);opacity:.8;}
+
+/* SHIFT HINT */
+.shift-hint{position:fixed;top:46%;left:50%;transform:translate(-50%,-50%);font-family:'Orbitron',monospace;font-size:14px;letter-spacing:5px;color:#ff4422;background:rgba(0,0,0,.7);border:1px solid rgba(255,68,34,.4);padding:8px 20px;animation:shiftPulse .4s infinite alternate;}
+.shift-hint.hidden{display:none;}
+@keyframes shiftPulse{from{opacity:.7;}to{opacity:1;box-shadow:0 0 20px rgba(255,68,34,.4);}}
+
+/* =============================================
+   BOTTOM CLUSTERS
+   ============================================= */
+
+/* BOTTOM-LEFT: Minimap + Health */
+.hud-bottom-left{
+  position:fixed;bottom:16px;left:16px;
+  display:flex;flex-direction:column;gap:8px;
+  align-items:flex-start;
+}
+
+.hud-minimap{
+  width:130px;
+  border:1px solid var(--bdr);
+  background:rgba(0,2,10,.72);
+  overflow:hidden;
+  position:relative;
+}
+.minimap-label{
+  font-family:'Orbitron',monospace;font-size:7px;letter-spacing:3px;
+  color:var(--muted);text-align:center;
+  padding:3px 0 0;background:rgba(0,2,10,.9);
+  border-bottom:1px solid rgba(0,180,255,.10);
+}
+#minimap-canvas{display:block;}
+
+.hud-dmg-wrap{width:130px;}
+.hud-dmg-bar{width:100%;height:5px;background:rgba(255,255,255,.08);margin-top:4px;border-radius:2px;overflow:hidden;}
+.hud-dmg-fill{height:100%;width:100%;background:#2ecc71;transition:width .3s,background .3s;box-shadow:0 0 8px currentColor;}
+
+/* BOTTOM-RIGHT: Gear panel + Speedo */
+.hud-bottom-right{
+  position:fixed;bottom:16px;right:16px;
+  display:flex;flex-direction:column;gap:8px;
+  align-items:flex-end;
+}
+
+/* MT GEAR PANEL */
+.gear-panel{display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:auto;}
+.gear-panel.hidden{display:none;}
+.gear-panel-label{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:3px;color:var(--muted);}
+.gear-buttons-row{display:flex;gap:4px;}
+.gb{width:34px;height:34px;font-family:'Bebas Neue',cursive;font-size:20px;background:rgba(0,4,12,.8);border:1px solid rgba(255,255,255,.14);color:var(--muted);cursor:pointer;transition:all .15s;clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);}
+.gb:hover{border-color:rgba(212,160,23,.5);color:var(--gold);}
+.gb.active{background:rgba(212,160,23,.22);border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(212,160,23,.35);}
+.gear-shift-keys{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);}
+.gk{display:inline-block;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);padding:1px 5px;border-radius:2px;font-size:9px;}
+
+/* SPEEDOMETER */
+.hud-speedo{position:relative;width:160px;height:160px;}
+#speedo-canvas{position:absolute;inset:0;}
+.speedo-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:12px;}
+.speedo-num{font-family:'Bebas Neue',cursive;font-size:46px;color:#fff;line-height:1;}
+.speedo-unit{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--muted);}
+.speedo-gear{position:absolute;bottom:14px;right:14px;font-family:'Bebas Neue',cursive;font-size:22px;color:var(--goldt);}
+
+/* =============================================
+   CONTROLS PANEL (left edge)
+   ============================================= */
+.ctrl-panel{position:fixed;left:12px;top:95px;background:rgba(2,4,14,.78);border:1px solid rgba(0,180,255,.14);border-left:2px solid rgba(0,196,255,.30);padding:9px 12px;pointer-events:none;min-width:140px;backdrop-filter:blur(4px);}
+.ctrl-header{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:4px;color:var(--cyan);margin-bottom:7px;}
+.ctrl-row{font-family:'Rajdhani',sans-serif;font-size:12px;color:rgba(200,220,240,.65);line-height:1.9;display:flex;align-items:center;gap:4px;}
+.ctrl-panel kbd{display:inline-block;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-bottom:2px solid rgba(255,255,255,.10);padding:1px 5px;border-radius:3px;font-family:'Orbitron',monospace;font-size:9px;color:rgba(200,220,240,.9);min-width:22px;text-align:center;}
+.ctrl-sep{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--gold);margin:5px 0 3px;opacity:.7;}
+
+/* ENTER/EXIT HINTS */
+.exit-hint,.enter-hint{position:fixed;bottom:48%;left:50%;transform:translateX(-50%);font-family:'Orbitron',monospace;font-size:12px;letter-spacing:3px;color:var(--gold);background:rgba(0,2,10,.82);padding:8px 20px;border:1px solid var(--bdrg);pointer-events:none;}
+.exit-hint.hidden,.enter-hint.hidden{display:none;}
+
+/* FLASH EFFECTS */
+.bump-flash,.damage-flash{position:fixed;inset:0;pointer-events:none;z-index:200;opacity:0;transition:opacity .05s;}
+.bump-flash{background:rgba(255,200,0,.12);}
+.damage-flash{background:rgba(200,0,0,.22);}

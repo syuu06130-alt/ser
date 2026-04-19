@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NERO — 首都高レーサー</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== LOADING ===== -->
+<div id="loading-screen">
+  <div class="loading-inner">
+    <div class="loading-logo">NERO</div>
+    <div class="loading-sub">首都高速 · SHUTO EXPRESSWAY MIDNIGHT</div>
+    <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+    <div class="loading-pct" id="loading-pct">0%</div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS SCREEN ===== -->
+<div id="settings-screen" class="screen hidden">
+  <div class="settings-panel">
+    <div class="settings-header">
+      <span class="settings-title">⚙ SETTINGS</span>
+      <button class="settings-close-btn" onclick="closeSettings()">✕ 戻る</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">🎮 TRANSMISSION</div>
+      <div class="mode-selector">
+        <button class="btn-mode active" id="btn-mode-at" onclick="selectMode('AT')">
+          <span class="mode-big">AT</span><span class="mode-sub">オートマ</span>
+        </button>
+        <button class="btn-mode" id="btn-mode-mt" onclick="selectMode('MT')">
+          <span class="mode-big">MT</span><span class="mode-sub">マニュアル</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">🖥 GRAPHICS QUALITY</div>
+      <div class="gfx-selector">
+        <button class="btn-gfx" id="btn-gfx-flat" onclick="selectGfx('flat')">
+          <span class="gfx-big">FLAT</span>
+          <span class="gfx-sub">フラットモード</span>
+          <span class="gfx-desc">低スペック向け・最高パフォーマンス</span>
+        </button>
+        <button class="btn-gfx active" id="btn-gfx-normal" onclick="selectGfx('normal')">
+          <span class="gfx-big">NORMAL</span>
+          <span class="gfx-sub">普通モード</span>
+          <span class="gfx-desc">推奨設定・バランス重視</span>
+        </button>
+        <button class="btn-gfx" id="btn-gfx-high" onclick="selectGfx('high')">
+          <span class="gfx-big">HIGH</span>
+          <span class="gfx-sub">高グラフィックモード</span>
+          <span class="gfx-desc">最高品質・高スペック推奨</span>
+        </button>
+      </div>
+      <div id="gfx-warn" class="gfx-warn"></div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">⌨ CONTROLS</div>
+      <div class="ctrl-table">
+        <div class="ctrl-row-s"><kbd>W</kbd><kbd>↑</kbd><span>前進</span></div>
+        <div class="ctrl-row-s"><kbd>S</kbd><kbd>↓</kbd><span>ブレーキ / 後退</span></div>
+        <div class="ctrl-row-s"><kbd>A</kbd><kbd>←</kbd><span>左ハンドル</span></div>
+        <div class="ctrl-row-s"><kbd>D</kbd><kbd>→</kbd><span>右ハンドル</span></div>
+        <div class="ctrl-row-s"><kbd>SPACE</kbd><span>ハンドブレーキ</span></div>
+        <div class="ctrl-row-s"><kbd>E</kbd><span>乗降</span></div>
+        <div class="ctrl-row-s ctrl-mt-hint"><kbd>Z</kbd><span>MT シフトダウン</span></div>
+        <div class="ctrl-row-s ctrl-mt-hint"><kbd>X</kbd><span>MT シフトアップ</span></div>
+        <div class="ctrl-row-s ctrl-mt-hint"><kbd>1–6</kbd><span>MT ダイレクトシフト</span></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">🗺 ROUTE</div>
+      <div class="route-info">
+        <span class="ri-dot ri-red"></span> 湾岸線East →
+        <span class="ri-dot ri-green"></span> 大井JCT →
+        <span class="ri-dot ri-blue"></span> C1南ループ →
+        <span class="ri-dot ri-orange"></span> C2外環 →
+        <span class="ri-dot ri-red"></span> 周回
+      </div>
+    </div>
+
+    <button class="btn-start settings-start" onclick="closeSettings()">← 戻る</button>
+  </div>
+</div>
+
+<!-- ===== TITLE SCREEN ===== -->
+<div id="title-screen" class="screen hidden">
+  <!-- Settings button top-right -->
+  <button class="title-settings-btn" onclick="openSettings()">⚙</button>
+  <div class="title-content">
+    <div class="title-logo">NERO<span class="title-dot">.</span></div>
+    <div class="title-tagline">首都高速湾岸線 · SHUTO EXPRESSWAY · MAX 320 KM/H</div>
+    <div class="title-sep"></div>
+
+    <div class="title-quick-row">
+      <div class="tq-item">
+        <div class="tq-label">TRANSMISSION</div>
+        <div class="mode-selector small">
+          <button class="btn-mode active" id="btn-mode-at" onclick="selectMode('AT')">
+            <span class="mode-big">AT</span><span class="mode-sub">オートマ</span>
+          </button>
+          <button class="btn-mode" id="btn-mode-mt" onclick="selectMode('MT')">
+            <span class="mode-big">MT</span><span class="mode-sub">マニュアル</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-start" id="btn-start">RACE NOW</button>
+
+    <div class="title-controls-hint">
+      <span class="key-hint">W/↑</span> 前進&nbsp;
+      <span class="key-hint">S/↓</span> ブレーキ&nbsp;
+      <span class="key-hint">A/←</span> 左&nbsp;
+      <span class="key-hint">D/→</span> 右&nbsp;
+      <span class="key-hint">SPC</span> HB&nbsp;
+      <span class="key-hint">E</span> 乗降
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME OVER ===== -->
+<div id="gameover-screen" class="screen hidden">
+  <div class="go-content">
+    <div class="go-label">GAME OVER</div>
+    <div class="go-score-row"><span class="go-score-label">SCORE</span><span class="go-score-val" id="go-score">0</span></div>
+    <div class="go-score-row"><span class="go-score-label">BEST</span><span class="go-score-val" id="go-best">0</span></div>
+    <button class="btn-start" id="btn-retry">RETRY</button>
+  </div>
+</div>
+
+<!-- ===== HUD ===== -->
+<div id="hud" class="hidden">
+
+  <!-- TOP BAR -->
+  <div class="hud-top">
+    <div class="hud-block">
+      <div class="hud-label">SCORE</div>
+      <div class="hud-val" id="hud-score">0</div>
+    </div>
+    <div class="hud-block center">
+      <div class="hud-label">TIME</div>
+      <div class="hud-val" id="hud-time">0:00</div>
+    </div>
+    <div class="hud-block right">
+      <div class="hud-label">BEST</div>
+      <div class="hud-val" id="hud-best">0</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS BUTTON (in-game, top-right corner) -->
+  <button class="ingame-settings-btn" onclick="openSettings()">⚙</button>
+
+  <!-- MODE BADGE (below score centre) -->
+  <div id="mode-badge" class="mode-badge">AT</div>
+
+  <!-- DRIVE STATUS (center, below mode badge) -->
+  <div class="hud-status" id="hud-status">READY</div>
+
+  <!-- SHIFT HINT (center screen) -->
+  <div id="shift-hint" class="shift-hint hidden">SHIFT UP ↑</div>
+
+  <!-- ===== BOTTOM-LEFT CLUSTER ===== -->
+  <div class="hud-bottom-left">
+    <!-- MINIMAP -->
+    <div class="hud-minimap">
+      <div class="minimap-label">MAP</div>
+      <canvas id="minimap-canvas" width="130" height="130"></canvas>
+    </div>
+    <!-- HEALTH BAR (below minimap) -->
+    <div class="hud-dmg-wrap">
+      <div class="hud-label">HEALTH</div>
+      <div class="hud-dmg-bar">
+        <div class="hud-dmg-fill" id="hud-dmg-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM-RIGHT CLUSTER ===== -->
+  <div class="hud-bottom-right">
+    <!-- MT GEAR PANEL (above speedo) -->
+    <div id="gear-panel" class="gear-panel hidden">
+      <div class="gear-panel-label">GEAR</div>
+      <div class="gear-buttons-row" id="gear-buttons-row">
+        <button class="gb" data-g="1">1</button>
+        <button class="gb" data-g="2">2</button>
+        <button class="gb" data-g="3">3</button>
+        <button class="gb" data-g="4">4</button>
+        <button class="gb" data-g="5">5</button>
+        <button class="gb" data-g="6">6</button>
+      </div>
+      <div class="gear-shift-keys"><span class="gk">Z</span>↓ <span class="gk">X</span>↑</div>
+    </div>
+    <!-- SPEEDOMETER -->
+    <div class="hud-speedo">
+      <canvas id="speedo-canvas" width="160" height="160"></canvas>
+      <div class="speedo-center">
+        <div class="speedo-num" id="speedo-num">0</div>
+        <div class="speedo-unit">KM/H</div>
+      </div>
+      <div class="speedo-gear" id="speedo-gear">N</div>
+    </div>
+  </div>
+
+  <!-- CONTROLS PANEL (left edge) -->
+  <div id="ctrl-panel" class="ctrl-panel">
+    <div class="ctrl-header">CONTROLS</div>
+    <div class="ctrl-row"><kbd>W</kbd><kbd>↑</kbd> 前進</div>
+    <div class="ctrl-row"><kbd>S</kbd><kbd>↓</kbd> ブレーキ</div>
+    <div class="ctrl-row"><kbd>A</kbd><kbd>D</kbd> ステア</div>
+    <div class="ctrl-row"><kbd>SPC</kbd> HB</div>
+    <div class="ctrl-row"><kbd>E</kbd> 乗降</div>
+    <div id="ctrl-mt-rows" class="hidden">
+      <div class="ctrl-sep">── MT ──</div>
+      <div class="ctrl-row"><kbd>Z</kbd> シフト↓</div>
+      <div class="ctrl-row"><kbd>X</kbd> シフト↑</div>
+    </div>
+  </div>
+
+  <!-- ENTER/EXIT HINTS -->
+  <div class="exit-hint hidden" id="exit-hint">[ E ] 降車</div>
+  <div class="enter-hint hidden" id="enter-hint">[ E ] 乗車</div>
+
+</div><!-- /#hud -->
+
+<div id="bump-flash"   class="bump-flash"></div>
+<div id="damage-flash" class="damage-flash"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
