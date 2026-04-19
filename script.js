@@ -62,28 +62,17 @@ scene.add(cityGlowL); scene.add(cityGlowR);
 
 // ================================================================
 // §4  首都高 ROUTE SPLINE
-//     Based on real Shuto Expressway layout:
-//     湾岸線East → 大井JCT → C1南 → C1West → C2外環 → 湾岸線West → loop
 // ================================================================
 const RAW_ROUTE=[
-  // 湾岸線 East straight approach
   [0,0],[0,80],[5,160],[15,230],
-  // 大井JCT sweeping right bend
   [35,290],[70,330],[110,350],[145,340],[170,310],[180,270],
-  // 羽田方面 turn
   [175,230],[155,195],[125,170],[90,155],[55,148],[20,150],
-  // C1 南 loop — sharp left curve
   [-20,160],[-55,180],[-80,215],[-95,260],[-95,310],
-  // 南 bottom loop
   [-80,360],[-55,395],[-20,410],[20,408],[55,390],[80,360],
-  // C1 west inner loop
   [90,310],[80,260],[55,225],[20,205],[-15,205],
-  // C2 外環 north arc — big wide sweep
   [-50,215],[-85,235],[-110,265],[-120,310],[-115,360],
   [-95,405],[-65,440],[-25,455],[20,450],[60,430],
-  // Back east connecting to 湾岸線
   [95,400],[115,355],[110,305],[85,265],[50,240],[10,230],
-  // Return straighten to origin
   [-10,165],[-5,90],[0,0],
 ];
 
@@ -94,7 +83,7 @@ function buildSpline(){
 const routeSpline=buildSpline();
 const ROUTE_LENGTH=routeSpline.getLength();
 
-// Precompute full route points for minimap
+// Precompute for minimap
 const MINIMAP_PTS=routeSpline.getPoints(300);
 let mmMinX=Infinity,mmMaxX=-Infinity,mmMinZ=Infinity,mmMaxZ=-Infinity;
 MINIMAP_PTS.forEach(p=>{
@@ -103,12 +92,11 @@ MINIMAP_PTS.forEach(p=>{
 });
 
 // ================================================================
-// §5  ROAD MESH — Segment-by-segment along spline
+// §5  ROAD MESH
 // ================================================================
-const ROAD_SEGS=120; // number of segments along full route
+const ROAD_SEGS=120;
 const roadGroup=new THREE.Group(); scene.add(roadGroup);
 
-// Shared materials
 const matRoad    =new THREE.MeshStandardMaterial({color:0x0d1014,roughness:0.20,metalness:0.08});
 const matShoulder=new THREE.MeshStandardMaterial({color:0x151820,roughness:0.80});
 const matConcA   =new THREE.MeshLambertMaterial({color:0xa8a8b8});
@@ -124,7 +112,6 @@ const matSignWht =new THREE.MeshBasicMaterial({color:0xffffff});
 const matRail    =new THREE.MeshPhongMaterial({color:0xaabbcc,shininess:80});
 const matPillar  =new THREE.MeshLambertMaterial({color:0x505060});
 
-// Build entire road geometry once
 function buildRoad(){
   for(let i=0;i<ROAD_SEGS;i++){
     const ta=i/ROAD_SEGS, tb=(i+1)/ROAD_SEGS;
@@ -133,6 +120,10 @@ function buildRoad(){
   if(GFX[gfxMode].buildings) buildCityBackdrop();
 }
 
+// ================================================================
+//   buildSegment — FIXED
+//   すべての要素を単一の add() ヘルパーで正しく配置・回転
+// ================================================================
 function buildSegment(ta,tb,idx){
   const pa=routeSpline.getPointAt(ta);
   const pb=routeSpline.getPointAt(tb);
@@ -143,97 +134,101 @@ function buildSegment(ta,tb,idx){
   const right=new THREE.Vector3(-dir.z,0,dir.x);
   const angle=Math.atan2(dir.x,dir.z);
 
-  function placed(mesh,y=0){mesh.position.copy(mid);mesh.position.y=y;mesh.rotation.y=angle;roadGroup.add(mesh);}
-
-  // Road surface
-  placed(new THREE.Mesh(new THREE.PlaneGeometry(ROAD_W,len),matRoad),0.005);
-  roadGroup.children[roadGroup.children.length-1].rotation.x=-Math.PI/2;
-  roadGroup.children[roadGroup.children.length-1].rotation.y=angle;
-
-  // Let's use a simpler approach — build each element with proper orientation
-  const segs=[]; // local build helper
+  // ox = road-right 方向オフセット, oy = 高さ, oz = road-forward 方向オフセット
   function add(geo,mat,ox,oy,oz){
     const m=new THREE.Mesh(geo,mat);
-    m.position.set(mid.x+right.x*ox+dir.x*oz, oy, mid.z+right.z*ox+dir.z*oz);
+    m.position.set(
+      mid.x + right.x*ox + dir.x*oz,
+      oy,
+      mid.z + right.z*ox + dir.z*oz
+    );
     m.rotation.y=angle;
     roadGroup.add(m);
   }
-  function addH(geo,mat,ox,oy,oz){ // horizontal plane
-    const m=new THREE.Mesh(geo,mat);
-    m.rotation.x=-Math.PI/2; m.rotation.z=-angle;
-    m.position.set(mid.x+right.x*ox+dir.x*oz, oy, mid.z+right.z*ox+dir.z*oz);
-    roadGroup.add(m);
-  }
 
-  // Road surface (flat)
-  addH(new THREE.PlaneGeometry(ROAD_W,len), matRoad, 0, 0.005, 0);
-  // Shoulders
-  addH(new THREE.PlaneGeometry(2.4,len), matShoulder, ROAD_W/2+1.2, 0.002, 0);
-  addH(new THREE.PlaneGeometry(2.4,len), matShoulder, -(ROAD_W/2+1.2), 0.002, 0);
-  // Yellow edge lines
-  addH(new THREE.PlaneGeometry(0.16,len), matYellow,  ROAD_W/2-0.25, 0.01, 0);
-  addH(new THREE.PlaneGeometry(0.16,len), matYellow, -(ROAD_W/2-0.25), 0.01, 0);
-  // Lane dashes — 3 lanes
+  // ── 路面（重複なし・1枚のみ）──
+  add(new THREE.BoxGeometry(ROAD_W,0.02,len),       matRoad,     0,               0,      0);
+
+  // ── 路肩 ──
+  add(new THREE.BoxGeometry(2.4,0.01,len),          matShoulder,  ROAD_W/2+1.2,  -0.002,  0);
+  add(new THREE.BoxGeometry(2.4,0.01,len),          matShoulder, -(ROAD_W/2+1.2),-0.002,  0);
+
+  // ── 黄色エッジライン ──
+  add(new THREE.BoxGeometry(0.16,0.015,len),        matYellow,    ROAD_W/2-0.25,  0.01,   0);
+  add(new THREE.BoxGeometry(0.16,0.015,len),        matYellow,  -(ROAD_W/2-0.25), 0.01,   0);
+
+  // ── 車線破線（3車線→仕切り2本）──
   const dashN=Math.max(1,Math.floor(len/10));
+  const dashLen=Math.min(5, len/dashN*0.65);
   for(let d=0;d<dashN;d++){
-    const dz=(d+0.5)/dashN*len-len/2;
-    [-ROAD_W/3, 0, ROAD_W/3].forEach(lx=>{
-      addH(new THREE.PlaneGeometry(0.14,5), matLine, lx, 0.012, dz);
+    const dz=(d+0.5)/dashN*len - len/2;
+    [-ROAD_W/6, ROAD_W/6].forEach(lx=>{
+      add(new THREE.BoxGeometry(0.14,0.015,dashLen), matLine, lx, 0.012, dz);
     });
   }
-  // Jersey barriers
+
+  // ── ジャージーバリア（両側）──
   [-ROAD_W/2-2.2, ROAD_W/2+2.2].forEach(bx=>{
     add(new THREE.BoxGeometry(0.55,0.26,len), matConcA, bx, 0.13, 0);
     add(new THREE.BoxGeometry(0.38,0.30,len), matConcB, bx, 0.41, 0);
     add(new THREE.BoxGeometry(0.22,0.22,len), matConcA, bx, 0.78, 0);
     add(new THREE.BoxGeometry(0.06,0.12,len), matRail,  bx, 1.10, 0);
   });
+
   if(gfxMode==='flat') return;
 
-  // Retaining walls
+  // ── 擁壁 ──
   [-ROAD_W/2-4.8, ROAD_W/2+4.8].forEach(wx=>{
     add(new THREE.BoxGeometry(0.36,5.5,len), matConcC, wx, 2.75, 0);
   });
-  // Elevated pillars (every ~50m of route = every few segments)
+
+  // ── 高架橋柱（4セグメントごと）──
   if(idx%4===0){
     [-ROAD_W/2-7.0, ROAD_W/2+7.0].forEach(px=>{
       add(new THREE.BoxGeometry(0.9,7.5,0.7), matPillar, px, -3.75, 0);
     });
   }
-  // Overhead gantry (every 15th segment)
+
+  // ── 門型標識（15セグメントごと）──
   if(idx%15===0){
     const H=8.0;
-    // Columns
+    // 支柱
     [-ROAD_W/2-4.8, ROAD_W/2+4.8].forEach(cx=>{
       add(new THREE.CylinderGeometry(0.12,0.12,H,6), matMetal, cx, H/2, 0);
     });
-    // Beam
-    add(new THREE.BoxGeometry(0.32,0.32,ROAD_W+10.5), matMetal, 0, H, 0);
-    // Lamp fixtures
+    // 横梁：道路を横断する方向 → X(road-right)が長辺
+    add(new THREE.BoxGeometry(ROAD_W+11.0,0.32,0.32), matMetal, 0, H, 0);
+    // 照明器具
     [-ROAD_W/2+1.5,-ROAD_W/6,0,ROAD_W/6,ROAD_W/2-1.5].forEach(lx=>{
       add(new THREE.BoxGeometry(0.68,0.20,0.85), matLampBody, lx, H-0.55, 0);
-      addH(new THREE.PlaneGeometry(0.54,0.70), matLampGlow, lx, H-0.68, 0);
+      add(new THREE.BoxGeometry(0.54,0.02,0.70), matLampGlow, lx, H-0.68, 0);
     });
-    // Sign board
-    add(new THREE.BoxGeometry(0.10,2.0,9.0), matSignGrn, 0, H+1.1, 0);
-    add(new THREE.BoxGeometry(0.08,2.24,9.3), matSignWht, 0, H+1.1, 0);
-    // Simple text simulation — white rectangles on sign
+    // 案内標識：交通方向を向く → X(road-right)が長辺
+    add(new THREE.BoxGeometry(9.2,2.0,0.12),  matSignGrn, 0, H+1.1, 0);
+    add(new THREE.BoxGeometry(9.5,2.24,0.08), matSignWht, 0, H+1.1, 0);
+    // 文字模擬
     for(let si=0;si<5;si++){
-      add(new THREE.BoxGeometry(0.06,0.5,0.9), new THREE.MeshBasicMaterial({color:0xffffff}), -3.6+si*1.8, H+1.1, 0);
+      add(new THREE.BoxGeometry(0.9,0.5,0.07),
+        new THREE.MeshBasicMaterial({color:0xffffff}),
+        -3.6+si*1.8, H+1.1, 0);
     }
   }
-  // Street light poles every 8th segment
+
+  // ── 街灯（8セグメントごと、左右交互）──
   if(idx%8<2){
     const side=idx%16<8?1:-1;
     const lx=side*(ROAD_W/2+3.5);
+    // ポール
     add(new THREE.CylinderGeometry(0.08,0.10,10,8), matMetal, lx, 5, 0);
-    add(new THREE.BoxGeometry(2.5,0.10,0.10), matMetal, lx+side*1.25, 9.8, 0);
-    add(new THREE.BoxGeometry(0.60,0.18,0.55), matLampBody, lx+side*2.4, 9.5, 0);
-    addH(new THREE.PlaneGeometry(0.50,0.45), matLampGlow, lx+side*2.4, 9.38, 0);
+    // アーム：道路外側へ伸びる（road-rightのX方向）
+    add(new THREE.BoxGeometry(2.5,0.10,0.10), matMetal, lx+side*1.25, 9.8,  0);
+    // 灯体
+    add(new THREE.BoxGeometry(0.60,0.18,0.55), matLampBody, lx+side*2.4, 9.5,  0);
+    add(new THREE.BoxGeometry(0.50,0.02,0.45), matLampGlow, lx+side*2.4, 9.38, 0);
   }
 }
 
-// City backdrop — buildings beside route
+// City backdrop
 function buildCityBackdrop(){
   const r=(n)=>Math.abs(Math.sin(n*234.5));
   for(let i=0;i<100;i++){
@@ -262,7 +257,6 @@ function buildCityBackdrop(){
         }
       }
     }
-    // Chimney on industrial buildings
     if(i%7===0&&r(i*3+5)>0.55){
       const chim=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.7,bh*0.6+8,8),
         new THREE.MeshLambertMaterial({color:0x181820}));
@@ -546,10 +540,10 @@ function buildTouchControls(){
 
 function getInput(){
   return{
-    fwd:   K.ArrowUp   ||K.KeyW||touchData.fwd,   // W/↑ 前進
-    rev:   K.ArrowDown ||K.KeyS||touchData.rev,   // S/↓ ブレーキ
-    left:  K.ArrowLeft ||K.KeyA||touchData.left,  // A/← 左ハンドル
-    right: K.ArrowRight||K.KeyD||touchData.right, // D/→ 右ハンドル
+    fwd:   K.ArrowUp   ||K.KeyW||touchData.fwd,
+    rev:   K.ArrowDown ||K.KeyS||touchData.rev,
+    left:  K.ArrowLeft ||K.KeyA||touchData.left,
+    right: K.ArrowRight||K.KeyD||touchData.right,
     hb:    K.Space              ||touchData.hb,
     e:     K.KeyE,
   };
@@ -559,7 +553,6 @@ function getInput(){
 // §11  PHYSICS UPDATE
 // ================================================================
 function stepCarPhysics(dt,inp){
-  // CORRECT: A=左(-), D=右(+)
   const tS=inp.left?-C.MAX_STEER:inp.right?C.MAX_STEER:0;
   phys.steer+=(tS-phys.steer)*Math.min((inp.left||inp.right?C.STEER_IN:C.STEER_OUT)*dt,1);
   const kmh=Math.abs(phys.speed)*3.6;
@@ -577,7 +570,6 @@ function stepCarPhysics(dt,inp){
   phys.yaw+=(phys.speed/C.WHEELBASE)*Math.tan(effS)*dt;
   phys.position.x+=Math.sin(phys.yaw)*phys.speed*dt;
   phys.position.z+=Math.cos(phys.yaw)*phys.speed*dt;
-  // Road boundary — lateral distance from route
   const cp=routeSpline.getPointAt(phys.routeT);
   const tan=routeSpline.getTangentAt(phys.routeT);
   const right=new THREE.Vector3(-tan.z,0,tan.x);
@@ -587,7 +579,6 @@ function stepCarPhysics(dt,inp){
     const ex=latD-Math.sign(latD)*(ROAD_W/2-1.2);
     phys.position.x-=right.x*ex; phys.position.z-=right.z*ex; phys.speed*=0.5;
   }
-  // Update routeT
   phys.routeT=(phys.routeT+phys.speed/ROUTE_LENGTH*dt+1)%1;
   const sf=(0-phys.suspY)*C.SPRING, df=phys.suspVY*C.DAMP;
   phys.suspVY+=(sf-df)*dt; phys.suspY+=phys.suspVY*dt;
@@ -729,16 +720,13 @@ function drawMinimap(){
   const offZ=margin+(H-margin*2-rangeZ*scale)/2-mmMinZ*scale;
   function tm(x,z){return[x*scale+offX,z*scale+offZ];}
 
-  // Route road (thick dark)
   minimapCtx.beginPath();
   MINIMAP_PTS.forEach((p,i)=>{const[mx,mz]=tm(p.x,p.z);i===0?minimapCtx.moveTo(mx,mz):minimapCtx.lineTo(mx,mz);});
   minimapCtx.closePath();minimapCtx.strokeStyle='rgba(30,50,90,1)';minimapCtx.lineWidth=5;minimapCtx.stroke();
-  // Route center
   minimapCtx.beginPath();
   MINIMAP_PTS.forEach((p,i)=>{const[mx,mz]=tm(p.x,p.z);i===0?minimapCtx.moveTo(mx,mz):minimapCtx.lineTo(mx,mz);});
   minimapCtx.closePath();minimapCtx.strokeStyle='rgba(0,150,255,0.55)';minimapCtx.lineWidth=1.5;minimapCtx.stroke();
 
-  // JCT markers
   [{t:0.12,n:'大井JCT'},{t:0.28,n:'羽田'},{t:0.42,n:'C1南'},{t:0.60,n:'C2'},{t:0.76,n:'東雲'},{t:0.90,n:'辰巳JCT'}].forEach(j=>{
     const pt=routeSpline.getPointAt(j.t);
     const[jx,jz]=tm(pt.x,pt.z);
@@ -747,23 +735,20 @@ function drawMinimap(){
     minimapCtx.fillText(j.n,jx,jz-5);
   });
 
-  // Enemies
   enemies.forEach(e=>{const[ex,ez]=tm(e.position.x,e.position.z);minimapCtx.fillStyle='#e74c3c';minimapCtx.fillRect(ex-2,ez-2,4,4);});
 
-  // Player
   const[px,pz]=tm(phys.position.x,phys.position.z);
   minimapCtx.fillStyle='#d4a017';minimapCtx.beginPath();minimapCtx.arc(px,pz,5,0,Math.PI*2);minimapCtx.fill();
   minimapCtx.save();minimapCtx.translate(px,pz);minimapCtx.rotate(-phys.yaw);
   minimapCtx.fillStyle='#00c4ff';minimapCtx.beginPath();minimapCtx.moveTo(0,-8);minimapCtx.lineTo(-3,3);minimapCtx.lineTo(3,3);minimapCtx.closePath();minimapCtx.fill();
   minimapCtx.restore();
 
-  // Progress ring top-right corner
   minimapCtx.beginPath();minimapCtx.arc(W-11,11,8,0,Math.PI*2);minimapCtx.strokeStyle='rgba(255,255,255,.1)';minimapCtx.lineWidth=2;minimapCtx.stroke();
   minimapCtx.beginPath();minimapCtx.arc(W-11,11,8,-Math.PI/2,-Math.PI/2+Math.PI*2*phys.routeT);minimapCtx.strokeStyle='#d4a017';minimapCtx.lineWidth=2.5;minimapCtx.lineCap='round';minimapCtx.stroke();
 }
 
 // ================================================================
-// §16  SETTINGS FUNCTIONS (called from HTML)
+// §16  SETTINGS FUNCTIONS
 // ================================================================
 window.selectMode=function(mode){
   transMode=mode;
@@ -778,7 +763,6 @@ window.selectGfx=function(mode){
   });
   scene.fog.density=GFX[mode].fog;
   renderer.setPixelRatio(GFX[mode].pixelRatio);
-  // Show warning for high mode
   const warn=document.getElementById('gfx-warn');
   warn.textContent=mode==='high'?'※ 高グラフィックはラグが発生する場合があります':mode==='flat'?'※ フラットモード：低スペック端末向け':'';
 };
