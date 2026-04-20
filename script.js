@@ -1,6 +1,6 @@
 /* =============================================
    NERO — 首都高レーサー  ·  script.js
-   4-ROUTE RANDOM RIBBON EDITION
+   8-ROUTE AUTO-ROTATE EDITION (1分毎切替)
    ============================================= */
 'use strict';
 
@@ -61,9 +61,10 @@ const cityGlowR=new THREE.PointLight(0x112244,1.6,80);
 scene.add(cityGlowL); scene.add(cityGlowR);
 
 // ================================================================
-// §4  4 ルート定義
+// §4  8 ルート定義
 // ================================================================
 const ROUTES=[
+  // ── Route 0 ──────────────────────────────────────────
   {
     name:'湾岸線',nameEn:'WANGAN',
     desc:'最高速ルート · ロングオーバル',
@@ -76,6 +77,7 @@ const ROUTES=[
       [148,-112],[85,-90],[38,-55],[10,-18]
     ]
   },
+  // ── Route 1 ──────────────────────────────────────────
   {
     name:'C1都心環状',nameEn:'C1 DOWNTOWN',
     desc:'都心テクニカル · タイトループ',
@@ -86,6 +88,7 @@ const ROUTES=[
       [-76,112],[-78,70],[-64,32],[-36,8],[-8,0]
     ]
   },
+  // ── Route 2 ──────────────────────────────────────────
   {
     name:'C2外環',nameEn:'C2 OUTER RING',
     desc:'広大スイーピング · ハイスピード',
@@ -98,6 +101,7 @@ const ROUTES=[
       [125,-10],[58,-5]
     ]
   },
+  // ── Route 3 ──────────────────────────────────────────
   {
     name:'ジャンクション',nameEn:'JUNCTION MIX',
     desc:'複合8の字 · 全技術要素',
@@ -108,6 +112,61 @@ const ROUTES=[
       [-82,36],[-16,6],[48,-28],[92,-86],
       [90,-158],[40,-202],[-22,-218],
       [-82,-198],[-124,-150],[-126,-82],[-80,-30],[-18,-4]
+    ]
+  },
+  // ── Route 4 ──────────────────────────────────────────
+  {
+    name:'レインボーブリッジ',nameEn:'RAINBOW BRIDGE',
+    desc:'海上高架 · ハイウェイスパイラル',
+    fogColor:0x010610, fogDensity:0.012,
+    pts:[
+      [0,0],[30,20],[80,28],[140,20],[190,-5],
+      [230,-45],[255,-95],[262,-150],[248,-205],
+      [215,-248],[168,-275],[112,-282],[58,-268],
+      [10,-238],[-22,-196],[-32,-144],[-20,-90],
+      [10,-44],[42,-14]
+    ]
+  },
+  // ── Route 5 ──────────────────────────────────────────
+  {
+    name:'首都高3号',nameEn:'ROUTE 3 SHIBUYA',
+    desc:'渋谷テクニカル · ヘアピン連続',
+    fogColor:0x020308, fogDensity:0.018,
+    pts:[
+      [0,0],[25,18],[38,50],[28,84],[0,105],
+      [-32,110],[-55,96],[-62,68],[-52,42],
+      [-28,22],[-4,16],[20,22],[42,38],[52,62],
+      [46,92],[26,118],[0,132],[-28,132],
+      [-50,116],[-58,90],[-48,64],[-24,48],[0,44]
+    ]
+  },
+  // ── Route 6 ──────────────────────────────────────────
+  {
+    name:'羽田アクセス',nameEn:'HANEDA ACCESS',
+    desc:'空港直結 · 超ロングストレート',
+    fogColor:0x010408, fogDensity:0.009,
+    pts:[
+      [0,0],[0,80],[0,180],[0,290],[0,400],
+      [0,500],[20,570],[55,620],[100,648],
+      [152,655],[205,638],[248,600],[272,548],
+      [275,488],[258,428],[224,376],[178,336],
+      [124,308],[74,290],[30,272],[6,240],
+      [0,180],[0,90]
+    ]
+  },
+  // ── Route 7 ──────────────────────────────────────────
+  {
+    name:'台場サーキット',nameEn:'DAIBA CIRCUIT',
+    desc:'臨海複合 · ミックスレイアウト',
+    fogColor:0x010610, fogDensity:0.013,
+    pts:[
+      [0,0],[60,10],[115,40],[148,90],[140,145],
+      [110,185],[65,200],[20,188],[-20,158],
+      [-42,115],[-40,68],[-16,32],[20,14],
+      [60,10],[110,20],[155,55],[175,105],
+      [168,158],[140,200],[100,228],[52,238],
+      [4,226],[-38,200],[-65,158],[-72,105],
+      [-56,56],[-20,24]
     ]
   }
 ];
@@ -156,73 +215,22 @@ const matPillar  =new THREE.MeshLambertMaterial({color:0x505060});
 // ================================================================
 // §7  リボンメッシュ生成ユーティリティ
 // ================================================================
-
-/**
- * 水平リボン（フラット面）— スプラインに沿って隙間なし
- * lOff: 左端オフセット（道路中心から）
- * rOff: 右端オフセット
- * y:    高さ（定数）
- * N:    サンプル数
- */
 function makeRibbon(spline, lOff, rOff, y, N){
-  N=N||320;
-  const pos=new Float32Array(N*6); // N samples × 2 verts × 3 coords
-  const idx=[];
-
-  for(let i=0;i<N;i++){
-    const t=i/N;
-    const pt=spline.getPointAt(t);
-    const tan=spline.getTangentAt(t);
-    const rLen=Math.sqrt(tan.x*tan.x+tan.z*tan.z)||1;
-    const rx=-tan.z/rLen, rz=tan.x/rLen; // right vector (normalized, horizontal)
-
-    const b=i*6;
-    // Left vertex
-    pos[b]  =pt.x+rx*lOff; pos[b+1]=y; pos[b+2]=pt.z+rz*lOff;
-    // Right vertex
-    pos[b+3]=pt.x+rx*rOff; pos[b+4]=y; pos[b+5]=pt.z+rz*rOff;
-
-    // Quad: connect sample i to sample (i+1)%N
-    const vi=i*2, nvi=((i+1)%N)*2;
-    // CCW winding for +Y normal (visible from above)
-    idx.push(vi, nvi, vi+1,  nvi, nvi+1, vi+1);
-  }
-
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  return geo;
-}
-
-/**
- * 垂直壁リボン — スプラインに沿う縦面
- * off:   中心からの横オフセット
- * yBot:  底面の高さ
- * yTop:  頂面の高さ
- */
-function makeWall(spline, off, yBot, yTop, N){
   N=N||320;
   const pos=new Float32Array(N*6);
   const idx=[];
-
   for(let i=0;i<N;i++){
     const t=i/N;
     const pt=spline.getPointAt(t);
     const tan=spline.getTangentAt(t);
     const rLen=Math.sqrt(tan.x*tan.x+tan.z*tan.z)||1;
     const rx=-tan.z/rLen, rz=tan.x/rLen;
-
-    const bx=pt.x+rx*off, bz=pt.z+rz*off;
     const b=i*6;
-    pos[b]  =bx; pos[b+1]=yBot; pos[b+2]=bz;
-    pos[b+3]=bx; pos[b+4]=yTop; pos[b+5]=bz;
-
+    pos[b]  =pt.x+rx*lOff; pos[b+1]=y; pos[b+2]=pt.z+rz*lOff;
+    pos[b+3]=pt.x+rx*rOff; pos[b+4]=y; pos[b+5]=pt.z+rz*rOff;
     const vi=i*2, nvi=((i+1)%N)*2;
-    // DoubleSide材質なので winding 方向はどちらでも可
-    idx.push(vi, vi+1, nvi,  vi+1, nvi+1, nvi);
+    idx.push(vi, nvi, vi+1,  nvi, nvi+1, vi+1);
   }
-
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   geo.setIndex(idx);
@@ -230,11 +238,30 @@ function makeWall(spline, off, yBot, yTop, N){
   return geo;
 }
 
-/**
- * 破線リボン — 一定間隔のダッシュ付き水平リボン
- * dashLen: ダッシュ長さ (m)
- * gapLen:  間隔長さ (m)
- */
+function makeWall(spline, off, yBot, yTop, N){
+  N=N||320;
+  const pos=new Float32Array(N*6);
+  const idx=[];
+  for(let i=0;i<N;i++){
+    const t=i/N;
+    const pt=spline.getPointAt(t);
+    const tan=spline.getTangentAt(t);
+    const rLen=Math.sqrt(tan.x*tan.x+tan.z*tan.z)||1;
+    const rx=-tan.z/rLen, rz=tan.x/rLen;
+    const bx=pt.x+rx*off, bz=pt.z+rz*off;
+    const b=i*6;
+    pos[b]  =bx; pos[b+1]=yBot; pos[b+2]=bz;
+    pos[b+3]=bx; pos[b+4]=yTop; pos[b+5]=bz;
+    const vi=i*2, nvi=((i+1)%N)*2;
+    idx.push(vi, vi+1, nvi,  vi+1, nvi+1, nvi);
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
 function makeDashedRibbon(spline, lOff, rOff, y, dashLen, gapLen, N){
   N=N||600;
   const totalLen=spline.getLength();
@@ -242,23 +269,19 @@ function makeDashedRibbon(spline, lOff, rOff, y, dashLen, gapLen, N){
   const posArr=[];
   const idxArr=[];
   let vi=0;
-
   for(let i=0;i<N;i++){
     const t0=i/N;
     const arc0=t0*totalLen;
-    if((arc0%period)>dashLen) continue; // gap zone
-
+    if((arc0%period)>dashLen) continue;
     const t1=(i+1)/N;
     const pt0=spline.getPointAt(t0);
     const tan0=spline.getTangentAt(t0);
     const r0=Math.sqrt(tan0.x*tan0.x+tan0.z*tan0.z)||1;
     const rx0=-tan0.z/r0, rz0=tan0.x/r0;
-
     const pt1=spline.getPointAt(t1);
     const tan1=spline.getTangentAt(t1);
     const r1=Math.sqrt(tan1.x*tan1.x+tan1.z*tan1.z)||1;
     const rx1=-tan1.z/r1, rz1=tan1.x/r1;
-
     posArr.push(
       pt0.x+rx0*lOff, y, pt0.z+rz0*lOff,
       pt0.x+rx0*rOff, y, pt0.z+rz0*rOff,
@@ -268,7 +291,6 @@ function makeDashedRibbon(spline, lOff, rOff, y, dashLen, gapLen, N){
     idxArr.push(vi, vi+2, vi+1,  vi+1, vi+2, vi+3);
     vi+=4;
   }
-
   if(posArr.length===0) return null;
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute(posArr,3));
@@ -292,38 +314,29 @@ function buildRoad(){
   const sp=routeSpline;
   const N=gfxMode==='flat'?180:320;
 
-  // ── 路面・路肩 ──
   addRibbon(makeRibbon(sp, -ROAD_W/2, ROAD_W/2, 0.005, N), matRoad);
   addRibbon(makeRibbon(sp,  ROAD_W/2, ROAD_W/2+2.6, 0.002, N), matShoulder);
   addRibbon(makeRibbon(sp, -ROAD_W/2-2.6, -ROAD_W/2, 0.002, N), matShoulder);
 
-  // ── 黄色エッジライン ──
   addRibbon(makeRibbon(sp,  ROAD_W/2-0.28, ROAD_W/2-0.12, 0.012, N), matYellow);
   addRibbon(makeRibbon(sp, -ROAD_W/2+0.12,-ROAD_W/2+0.28, 0.012, N), matYellow);
 
-  // ── 車線破線（3車線→2仕切り）──
   const dashGeo1=makeDashedRibbon(sp,-ROAD_W/6-0.07,-ROAD_W/6+0.07,0.014,6,10,N*2);
   const dashGeo2=makeDashedRibbon(sp, ROAD_W/6-0.07, ROAD_W/6+0.07,0.014,6,10,N*2);
   addRibbon(dashGeo1, matLine);
   addRibbon(dashGeo2, matLine);
 
-  // ── ジャージーバリア（壁リボン）両側 ──
   const BX_L=-(ROAD_W/2+2.2), BX_R= (ROAD_W/2+2.2);
-  // 底面トップ（台形断面 簡易版: 3層の壁）
   [BX_L, BX_R].forEach(bx=>{
-    // 下段 (広い)
-    addRibbon(makeRibbon(sp, bx-0.28, bx+0.28, 0.26, N), matConcA); // 天面
-    addRibbon(makeWall(sp, bx-0.28, 0.00, 0.26, N), matConcA);      // 外壁
-    addRibbon(makeWall(sp, bx+0.28, 0.00, 0.26, N), matConcA);      // 内壁
-    // 中段
+    addRibbon(makeRibbon(sp, bx-0.28, bx+0.28, 0.26, N), matConcA);
+    addRibbon(makeWall(sp, bx-0.28, 0.00, 0.26, N), matConcA);
+    addRibbon(makeWall(sp, bx+0.28, 0.00, 0.26, N), matConcA);
     addRibbon(makeRibbon(sp, bx-0.19, bx+0.19, 0.56, N), matConcB);
     addRibbon(makeWall(sp, bx-0.19, 0.26, 0.56, N), matConcB);
     addRibbon(makeWall(sp, bx+0.19, 0.26, 0.56, N), matConcB);
-    // 上段（細）
     addRibbon(makeRibbon(sp, bx-0.11, bx+0.11, 0.98, N), matConcA);
     addRibbon(makeWall(sp, bx-0.11, 0.56, 0.98, N), matConcA);
     addRibbon(makeWall(sp, bx+0.11, 0.56, 0.98, N), matConcA);
-    // ガードレール
     addRibbon(makeWall(sp, bx, 0.98, 1.12, N), matRail);
   });
 
@@ -331,7 +344,6 @@ function buildRoad(){
     buildProps(); buildCityBackdrop(); return;
   }
 
-  // ── 擁壁（高架壁）──
   const WX_L=-(ROAD_W/2+4.8), WX_R= (ROAD_W/2+4.8);
   addRibbon(makeWall(sp, WX_L, 0.0, 5.5, N), matConcC);
   addRibbon(makeWall(sp, WX_R, 0.0, 5.5, N), matConcC);
@@ -342,52 +354,36 @@ function buildRoad(){
 
 function buildProps(){
   const sp=routeSpline;
-  const PROP_N=200; // prop placement sample count
-
+  const PROP_N=200;
   for(let i=0;i<PROP_N;i++){
     const t=i/PROP_N;
     const pt=sp.getPointAt(t);
     const tan=sp.getTangentAt(t).normalize();
     const rx=-tan.z, rz=tan.x;
     const angle=Math.atan2(tan.x,tan.z);
-
     function place(geo,mat,ox,oy,oz){
       const m=new THREE.Mesh(geo,mat);
-      m.position.set(
-        pt.x+rx*ox+tan.x*oz,
-        oy,
-        pt.z+rz*ox+tan.z*oz
-      );
-      m.rotation.y=angle;
-      roadGroup.add(m);
+      m.position.set(pt.x+rx*ox+tan.x*oz,oy,pt.z+rz*ox+tan.z*oz);
+      m.rotation.y=angle; roadGroup.add(m);
     }
-
-    // 高架橋脚（4プロップごと）
     if(i%4===0&&gfxMode!=='flat'){
       [-(ROAD_W/2+7.0),(ROAD_W/2+7.0)].forEach(px=>{
         place(new THREE.BoxGeometry(0.9,7.5,0.7),matPillar,px,-3.75,0);
       });
     }
-
-    // 門型標識（15プロップごと）
     if(i%15===0&&gfxMode!=='flat'){
       const H=8.0;
       [-(ROAD_W/2+4.8),(ROAD_W/2+4.8)].forEach(cx=>{
         place(new THREE.CylinderGeometry(0.12,0.12,H,6),matMetal,cx,H/2,0);
       });
-      // 横梁：X方向（road-right）が長辺
       place(new THREE.BoxGeometry(ROAD_W+11,0.32,0.32),matMetal,0,H,0);
-      // 照明
       [-(ROAD_W/2-1.5),-(ROAD_W/6),0,(ROAD_W/6),(ROAD_W/2-1.5)].forEach(lx=>{
         place(new THREE.BoxGeometry(0.68,0.20,0.85),matLampBody,lx,H-0.55,0);
         place(new THREE.BoxGeometry(0.54,0.02,0.70),matLampGlow,lx,H-0.68,0);
       });
-      // 案内標識（X方向が長辺）
       place(new THREE.BoxGeometry(9.2,2.0,0.12),matSignGrn,0,H+1.1,0);
       place(new THREE.BoxGeometry(9.5,2.24,0.08),matSignWht,0,H+1.1,0);
     }
-
-    // 街灯（8プロップごと、左右交互）
     if(i%8<2){
       const side=i%16<8?1:-1;
       const lx=side*(ROAD_W/2+3.5);
@@ -444,13 +440,11 @@ function buildCityBackdrop(){
 }
 
 function clearRoad(){
-  // roadGroup の中身を破棄してクリア
   while(roadGroup.children.length>0){
     const c=roadGroup.children[0];
     if(c.geometry) c.geometry.dispose();
     roadGroup.remove(c);
   }
-  // cityGroup の中身をクリア
   while(cityGroup.children.length>0){
     const c=cityGroup.children[0];
     if(c.geometry) c.geometry.dispose();
@@ -761,7 +755,6 @@ function stepCarPhysics(dt,inp){
   phys.yaw+=(phys.speed/C.WHEELBASE)*Math.tan(effS)*dt;
   phys.position.x+=Math.sin(phys.yaw)*phys.speed*dt;
   phys.position.z+=Math.cos(phys.yaw)*phys.speed*dt;
-  // 路外逸脱防止
   const cp=routeSpline.getPointAt(phys.routeT);
   const tan=routeSpline.getTangentAt(phys.routeT);
   const right=new THREE.Vector3(-tan.z,0,tan.x);
@@ -847,7 +840,7 @@ let _lastScoreTick=0, _shiftTimer=0;
 const speedoCtx=document.getElementById('speedo-canvas').getContext('2d');
 const minimapCtx=document.getElementById('minimap-canvas').getContext('2d');
 
-// ルート名表示要素を動的追加
+// ルート名表示
 const routeNameEl=document.createElement('div');
 routeNameEl.style.cssText=`
   position:fixed;top:50px;left:50%;transform:translateX(-50%);
@@ -857,6 +850,125 @@ routeNameEl.style.cssText=`
   pointer-events:none;opacity:0;transition:opacity .6s;z-index:150;
 `;
 document.getElementById('hud').appendChild(routeNameEl);
+
+// ── ルート自動切替カウントダウン表示 ──
+const autoRouteEl=document.createElement('div');
+autoRouteEl.id='auto-route-hud';
+autoRouteEl.style.cssText=`
+  position:fixed;top:12px;left:50%;transform:translateX(-50%);
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:4px;
+  color:rgba(212,160,23,.7);background:rgba(0,2,10,.70);
+  border:1px solid rgba(212,160,23,.18);padding:3px 12px;
+  pointer-events:none;z-index:150;white-space:nowrap;
+`;
+document.getElementById('hud').appendChild(autoRouteEl);
+
+// ── 次ルート警告バナー ──
+const nextRouteWarnEl=document.createElement('div');
+nextRouteWarnEl.id='next-route-warn';
+nextRouteWarnEl.style.cssText=`
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Orbitron',monospace;font-size:14px;letter-spacing:6px;
+  color:#d4a017;background:rgba(0,2,10,.90);
+  border:1px solid rgba(212,160,23,.45);padding:10px 28px;
+  pointer-events:none;opacity:0;transition:opacity .4s;z-index:200;text-align:center;
+`;
+document.getElementById('hud').appendChild(nextRouteWarnEl);
+
+// ================================================================
+// §18b  ルート自動切替タイマー
+// ================================================================
+const ROUTE_DURATION=60; // 秒
+let autoRouteRemain=ROUTE_DURATION;
+let _routeSwitchWarned=false;
+
+function updateAutoRouteTimer(dt){
+  if(!gameState.playing) return;
+  autoRouteRemain-=dt;
+
+  // 10秒前警告
+  if(autoRouteRemain<=10&&!_routeSwitchWarned){
+    _routeSwitchWarned=true;
+    const nextIdx=(currentRouteIdx+1)%ROUTES.length;
+    const nextRoute=ROUTES[nextIdx];
+    nextRouteWarnEl.innerHTML=`NEXT ROUTE<br><span style="font-size:18px;color:#00c4ff;">${nextRoute.nameEn}</span>`;
+    nextRouteWarnEl.style.opacity='1';
+    setTimeout(()=>{nextRouteWarnEl.style.opacity='0';},4000);
+  }
+
+  // HUDカウントダウン更新
+  const sec=Math.max(0,Math.ceil(autoRouteRemain));
+  const nextIdx=(currentRouteIdx+1)%ROUTES.length;
+  autoRouteEl.textContent=`NEXT: ${ROUTES[nextIdx].nameEn}  ${sec}s`;
+  if(sec<=10) autoRouteEl.style.color='#ff4422';
+  else autoRouteEl.style.color='rgba(212,160,23,.7)';
+
+  // 切替タイミング
+  if(autoRouteRemain<=0){
+    autoRouteRemain=ROUTE_DURATION;
+    _routeSwitchWarned=false;
+    switchRoute();
+  }
+}
+
+/**
+ * 走行中にルートだけ切り替える（スコア・ヘルスは継続）
+ */
+function switchRoute(){
+  // 次のルートを順番に選択
+  const nextIdx=(currentRouteIdx+1)%ROUTES.length;
+  currentRouteIdx=nextIdx;
+  const route=ROUTES[currentRouteIdx];
+
+  // ミニロード画面
+  const loadEl=document.createElement('div');
+  loadEl.style.cssText='position:fixed;inset:0;background:#000;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .35s;';
+  loadEl.innerHTML=`
+    <div style="font-family:'Bebas Neue',cursive;font-size:56px;letter-spacing:10px;color:#d4a017;line-height:1;">${route.nameEn}</div>
+    <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:5px;color:#4a5a68;margin-top:4px;">${route.name} · ${route.desc}</div>
+    <div style="margin-top:18px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:#00c4ff;">ROUTE CHANGE</div>
+    <div style="width:180px;height:2px;background:rgba(255,255,255,.07);margin:16px auto 6px;overflow:hidden;">
+      <div id="sw-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#d4a017,#00c4ff);transition:width .25s;"></div>
+    </div>
+  `;
+  document.body.appendChild(loadEl);
+
+  // フェードイン
+  requestAnimationFrame(()=>{
+    loadEl.style.opacity='1';
+    setTimeout(()=>{
+      loadEl.querySelector('#sw-bar').style.width='50%';
+      // 道路再構築
+      clearRoad();
+      buildSplineForRoute(currentRouteIdx);
+      setTimeout(()=>{
+        buildRoad();
+        loadEl.querySelector('#sw-bar').style.width='100%';
+        scene.fog.density=GFX[gfxMode].fog;
+
+        // プレイヤー位置をルート先頭にリセット（速度は保持）
+        const sp=routeSpline.getPointAt(0);
+        const tan=routeSpline.getTangentAt(0);
+        phys.position.set(sp.x,0,sp.z);
+        phys.yaw=Math.atan2(tan.x,tan.z);
+        phys.routeT=0;
+        walkState.x=sp.x; walkState.z=sp.z; walkState.yaw=phys.yaw;
+
+        // 敵をリセット
+        enemies.forEach(e=>scene.remove(e)); enemies.length=0;
+        for(let i=0;i<6;i++) spawnEnemy();
+
+        setTimeout(()=>{
+          loadEl.style.opacity='0';
+          setTimeout(()=>{
+            loadEl.remove();
+            showRouteFlash(route);
+          },380);
+        },200);
+      },220);
+    },80);
+  });
+}
 
 function showRouteFlash(route){
   routeNameEl.textContent=`${route.name} · ${route.nameEn}`;
@@ -899,6 +1011,7 @@ function updateHUD(dt){
     document.getElementById('exit-hint').classList.remove('hidden');
     document.getElementById('enter-hint').classList.add('hidden');
   }
+  updateAutoRouteTimer(dt);
   drawMinimap();
 }
 
@@ -927,6 +1040,12 @@ function drawMinimap(){
   const offX=margin+(W-margin*2-rangeX*scale)/2-mmMinX*scale;
   const offZ=margin+(H-margin*2-rangeZ*scale)/2-mmMinZ*scale;
   function tm(x,z){return[x*scale+offX,z*scale+offZ];}
+
+  // ルート番号インジケーター（右上）
+  minimapCtx.fillStyle='rgba(212,160,23,.7)';
+  minimapCtx.font='bold 9px monospace';
+  minimapCtx.textAlign='left';
+  minimapCtx.fillText(`R${currentRouteIdx+1}/8`,4,12);
 
   minimapCtx.beginPath();
   MINIMAP_PTS.forEach((p,i)=>{const[mx,mz]=tm(p.x,p.z);i===0?minimapCtx.moveTo(mx,mz):minimapCtx.lineTo(mx,mz);});
@@ -973,9 +1092,10 @@ function enterCar(){gameState.inCar=true;playerCar.visible=true;playerFoot.visib
 function exitCar(){gameState.inCar=false;phys.speed=0;walkState.x=phys.position.x-Math.sin(phys.yaw)*2.5;walkState.z=phys.position.z-Math.cos(phys.yaw)*2.5;walkState.yaw=phys.yaw;playerFoot.visible=true;playerCar.visible=true;}
 
 // ================================================================
-// §21  GAME FLOW — ランダムルート選択
+// §21  GAME FLOW
 // ================================================================
-let _usedRoutes=[];  // 使用済みルートを追跡（全使用で最初からリセット）
+// 使用済みルート追跡（ランダム初回選択用）
+let _usedRoutes=[];
 
 function pickNextRoute(){
   if(_usedRoutes.length>=ROUTES.length) _usedRoutes=[];
@@ -987,12 +1107,14 @@ function pickNextRoute(){
 }
 
 function startGame(){
-  // ── 新ルートをランダム選択 ──
+  // ゲーム開始時はランダムルートを選択
   const nextIdx=pickNextRoute();
-  const needRebuild=(nextIdx!==currentRouteIdx)||gameState.score===0;
   currentRouteIdx=nextIdx;
 
-  // ── ロード画面 ──
+  // タイマーリセット
+  autoRouteRemain=ROUTE_DURATION;
+  _routeSwitchWarned=false;
+
   const loadEl=document.createElement('div');
   loadEl.style.cssText='position:fixed;inset:0;background:#000;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;';
   const route=ROUTES[currentRouteIdx];
@@ -1007,13 +1129,11 @@ function startGame(){
   document.body.appendChild(loadEl);
   const rlBar=loadEl.querySelector('#rl-bar');
   const rlPct=loadEl.querySelector('#rl-pct');
-
   function setProgress(p){ rlBar.style.width=p+'%'; rlPct.textContent=p+'%'; }
 
   setTimeout(()=>{
     setProgress(10);
     setTimeout(()=>{
-      // 道路を再構築
       clearRoad();
       buildSplineForRoute(currentRouteIdx);
       setProgress(40);
@@ -1022,10 +1142,8 @@ function startGame(){
         setProgress(80);
         setTimeout(()=>{
           setProgress(100);
-          // フォグ・シーン設定
           scene.fog.density=GFX[gfxMode].fog;
 
-          // プレイヤー初期化
           gameState.playing=true; gameState.inCar=true;
           gameState.score=0; gameState.health=100; gameState.elapsed=0;
           const sp=routeSpline.getPointAt(0);
@@ -1054,7 +1172,6 @@ function startGame(){
           document.getElementById('gameover-screen').classList.add('hidden');
           document.getElementById('settings-screen').classList.add('hidden');
 
-          // ロード画面フェードアウト
           setTimeout(()=>{
             loadEl.style.transition='opacity .5s';
             loadEl.style.opacity='0';
@@ -1118,7 +1235,6 @@ function init(){
     ['交通を配置中…',           ()=>{for(let i=0;i<6;i++) spawnEnemy();}],
     ['コントロールを構築中…',   buildTouchControls],
   ];
-  // 起動時はランダムルートを選択
   currentRouteIdx=pickNextRoute();
   buildSplineForRoute(currentRouteIdx);
 
